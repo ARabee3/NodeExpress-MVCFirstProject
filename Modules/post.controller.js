@@ -26,7 +26,7 @@ const getPostById = async (req, res) => {
 };
 
 const addPost = async (req, res) => {
-  let newPost = await postModel.insertMany(req.body);
+  let newPost = await postModel.create(req.body);
   if (newPost) {
     res.status(201).json({
       message: "Post Added Successfully",
@@ -42,22 +42,27 @@ const addPost = async (req, res) => {
 const updatePost = async (req, res) => {
   try {
     const postId = req.params.id;
-    const post = await postModel.findById(postId);
-    if (post) {
-      await post.updateOne({
+
+    // findByIdAndUpdate is cleaner. { new: true } returns the updated document.
+    const updatedPost = await postModel.findByIdAndUpdate(
+      postId,
+      {
         postTitle: req.body.postTitle,
         postText: req.body.postText,
-      });
+      },
+      { new: true, runValidators: true },
+    );
 
+    if (updatedPost) {
       res.status(200).json({
-        message: "updated Successfully",
-        data: post,
+        message: "Updated Successfully",
+        data: updatedPost,
       });
     } else {
       res.status(404).json({ message: "No Post with the id Found" });
     }
   } catch (error) {
-    res.status(400).json({ message: "Invalid format" });
+    res.status(400).json({ message: "Invalid format or validation error" });
   }
 };
 
