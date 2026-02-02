@@ -1,4 +1,4 @@
-import { postModel } from "../Database/Models/post.model.js";
+import { postModel } from "../../Database/Models/post.model.js";
 
 const getPosts = async (req, res) => {
   const posts = await postModel.find();
