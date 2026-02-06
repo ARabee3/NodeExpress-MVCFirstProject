@@ -13,9 +13,9 @@ const postSchema = new Schema(
       required: true,
       minlength: 10,
     },
-    privacy: {
-      type: Boolean,
-      default: false,
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
     },
   },
   { timestamps: true, versionKey: false },

@@ -26,6 +26,7 @@ const getPostById = async (req, res) => {
 };
 
 const addPost = async (req, res) => {
+  req.body.user = req.user._id;
   let newPost = await postModel.create(req.body);
   if (newPost) {
     res.status(201).json({
@@ -43,7 +44,6 @@ const updatePost = async (req, res) => {
   try {
     const postId = req.params.id;
 
-    // findByIdAndUpdate is cleaner. { new: true } returns the updated document.
     const updatedPost = await postModel.findByIdAndUpdate(
       postId,
       {

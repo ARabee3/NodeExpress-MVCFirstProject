@@ -6,13 +6,15 @@ import {
   updatePost,
   deletePost,
 } from "./post.controller.js";
+import verifyToken from "../../Middlewares/auth/verifyToken.js";
 
 const postRouter = express.Router();
+postRouter.use(verifyToken);
 
-postRouter.get("/posts", getPosts);
-postRouter.get("/posts/:id", getPostById);
-postRouter.post("/posts", addPost);
-postRouter.put("/posts/:id", updatePost);
-postRouter.delete("/posts/:id", deletePost);
+postRouter.get("/", getPosts);
+postRouter.get("/:id", getPostById);
+postRouter.post("/", addPost);
+postRouter.put("/:id", updatePost);
+postRouter.delete("/:id", deletePost);
 
 export default postRouter;
