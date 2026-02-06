@@ -43,9 +43,13 @@ const addPost = async (req, res) => {
 const updatePost = async (req, res) => {
   try {
     const postId = req.params.id;
+    const currentUserId = req.user._id;
 
-    const updatedPost = await postModel.findByIdAndUpdate(
-      postId,
+    const updatedPost = await postModel.findOneAndUpdate(
+      {
+        _id: postId,
+        user: currentUserId,
+      },
       {
         postTitle: req.body.postTitle,
         postText: req.body.postText,
@@ -69,12 +73,24 @@ const updatePost = async (req, res) => {
 const deletePost = async (req, res) => {
   try {
     const postId = req.params.id;
-    await postModel.findByIdAndDelete(postId);
+    const currentUserId = req.user._id;
+
+    const deletedPost = await postModel.findOneAndDelete({
+      _id: postId,
+      user: currentUserId,
+    });
+
+    if (!deletedPost) {
+      return res
+        .status(403)
+        .json({ message: "You are not authorized to delete this!" });
+    }
+
     res.status(204).json({
       message: "Post Deleted Succesfully",
     });
   } catch (error) {
-    res.status(400).json({ message: "Invalid format" });
+    res.status(400).json({ message: "Invalid request" });
   }
 };
 export { getPosts, addPost, getPostById, updatePost, deletePost };

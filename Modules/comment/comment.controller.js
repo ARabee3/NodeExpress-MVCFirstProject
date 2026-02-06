@@ -37,6 +37,7 @@ const addComment = async (req, res) => {
   }
 };
 
+//ADD AUTHORIZATION HERE
 const updateComment = async (req, res) => {
   try {
     const commentId = req.params.id;
