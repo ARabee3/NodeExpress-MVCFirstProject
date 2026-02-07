@@ -1,74 +1,80 @@
 import { commentModel } from "../../Database/Models/comments.model.js";
+import { AppError } from "../../Utils/ErrorHandling/AppError.js";
+import { catchAsync } from "../../Utils/ErrorHandling/catchAsync.js";
 
-const getComments = async (req, res) => {
+const getComments = catchAsync(async (req, res, next) => {
   const allComments = await commentModel.find();
-  res.json({
+  res.status(200).json({
     message: "All Available Comments:",
     data: allComments,
   });
-};
+});
 
-const getCommentById = async (req, res) => {
-  try {
-    const commentId = req.params.id;
-    const comment = await commentModel.findById(commentId);
-    if (comment) {
-      return res.json({ message: "Found Comment", data: comment });
-    }
-    res.status(404).json({ message: "Comment Not Found" });
-  } catch (error) {
-    res.status(400).json({ message: "Invalid Request" });
+const getCommentById = catchAsync(async (req, res, next) => {
+  const commentId = req.params.id;
+  const comment = await commentModel.findById(commentId);
+  if (!comment) {
+    return next(new AppError("Comment Not Found", 404));
   }
-};
+  return res.json({ message: "Found Comment", data: comment });
+});
 
-const addComment = async (req, res) => {
+const addComment = catchAsync(async (req, res, next) => {
   req.body.user = req.user._id;
-  req.body.post = req.params.postId;
+  if (req.params.postId) req.body.post = req.params.postId;
+
   let newComment = await commentModel.create(req.body);
-  if (newComment) {
-    res.status(201).json({
-      message: "Comment Added Successfully",
-      data: newComment,
-    });
-  } else {
-    res.status(400).json({
-      message: "Cannot Add a New Comment",
-    });
-  }
-};
+  res.status(201).json({
+    message: "Comment Added Successfully",
+    data: newComment,
+  });
+});
 
-//ADD AUTHORIZATION HERE
-const updateComment = async (req, res) => {
-  try {
-    const commentId = req.params.id;
-    const comment = await commentModel.findByIdAndUpdate(commentId, req.body);
-    if (comment) {
-      return res.json({
-        message: "Comment Updated Successfully",
-        data: comment,
-      });
-    }
-    res.status(404).json({ message: "Comment Not Found" });
-  } catch (error) {
-    res.status(400).json({ message: "Invalid Request" });
-  }
-};
+const updateComment = catchAsync(async (req, res, next) => {
+  const commentId = req.params.id;
+  const currentUserId = req.user._id;
 
-const deleteComment = async (req, res) => {
-  try {
-    const commentId = req.params.id;
-    const comment = await commentModel.findByIdAndDelete(commentId);
-    if (comment) {
-      return res.json({
-        message: "Comment Deleted Successfully",
-        data: comment,
-      });
-    }
-    res.status(404).json({ message: "Comment Not Found" });
-  } catch (error) {
-    res.status(400).json({ message: "Invalid Request" });
+  const comment = await commentModel.findOneAndUpdate(
+    { _id: commentId, user: currentUserId },
+    req.body,
+    { new: true, runValidators: true },
+  );
+
+  if (!comment) {
+    return next(
+      new AppError(
+        "Comment not found or you are not authorized to update it",
+        404,
+      ),
+    );
   }
-};
+  return res.json({
+    message: "Comment Updated Successfully",
+    data: comment,
+  });
+});
+
+const deleteComment = catchAsync(async (req, res, next) => {
+  const commentId = req.params.id;
+  const currentUserId = req.user._id;
+
+  const comment = await commentModel.findOneAndDelete({
+    _id: commentId,
+    user: currentUserId,
+  });
+
+  if (!comment) {
+    return next(
+      new AppError(
+        "Comment not found or you are not authorized to delete it",
+        403,
+      ),
+    );
+  }
+  return res.json({
+    message: "Comment Deleted Successfully",
+  });
+});
 
 export {
   getComments,

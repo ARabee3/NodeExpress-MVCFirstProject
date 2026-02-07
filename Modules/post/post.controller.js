@@ -1,96 +1,78 @@
 import { postModel } from "../../Database/Models/post.model.js";
+import { catchAsync } from "../../Utils/ErrorHandling/catchAsync.js";
+import { AppError } from "../../Utils/ErrorHandling/AppError.js";
 
-const getPosts = async (req, res) => {
+const getPosts = catchAsync(async (req, res, next) => {
   const posts = await postModel.find();
   res.status(200).json({
     message: "List Of Available Posts: ",
     data: posts,
   });
-};
+});
 
-const getPostById = async (req, res) => {
-  try {
-    const postId = req.params.id;
-    const post = await postModel.findById(postId);
-    if (post) {
-      res.json({
-        message: "Found Post",
-        data: post,
-      });
-    } else {
-      res.status(404).json({ message: "No Post Found" });
-    }
-  } catch (error) {
-    res.status(400).json({ message: "Invalid ID format" });
-  }
-};
-
-const addPost = async (req, res) => {
-  req.body.user = req.user._id;
-  let newPost = await postModel.create(req.body);
-  if (newPost) {
-    res.status(201).json({
-      message: "Post Added Successfully",
-      data: newPost,
+const getPostById = catchAsync(async (req, res, next) => {
+  const postId = req.params.id;
+  const post = await postModel.findById(postId);
+  if (post) {
+    res.json({
+      message: "Found Post",
+      data: post,
     });
   } else {
-    res.status(400).json({
-      message: "Cannot Add a New Post",
-    });
+    next(new AppError("No Post Found", 404));
   }
-};
+});
 
-const updatePost = async (req, res) => {
-  try {
-    const postId = req.params.id;
-    const currentUserId = req.user._id;
+const addPost = catchAsync(async (req, res, next) => {
+  req.body.user = req.user._id;
+  let newPost = await postModel.create(req.body);
 
-    const updatedPost = await postModel.findOneAndUpdate(
-      {
-        _id: postId,
-        user: currentUserId,
-      },
-      {
-        postTitle: req.body.postTitle,
-        postText: req.body.postText,
-      },
-      { new: true, runValidators: true },
-    );
+  res.status(201).json({
+    message: "Post Added Successfully",
+    data: newPost,
+  });
+});
 
-    if (updatedPost) {
-      res.status(200).json({
-        message: "Updated Successfully",
-        data: updatedPost,
-      });
-    } else {
-      res.status(404).json({ message: "No Post with the id Found" });
-    }
-  } catch (error) {
-    res.status(400).json({ message: "Invalid format or validation error" });
-  }
-};
+const updatePost = catchAsync(async (req, res, next) => {
+  const postId = req.params.id;
+  const currentUserId = req.user._id;
 
-const deletePost = async (req, res) => {
-  try {
-    const postId = req.params.id;
-    const currentUserId = req.user._id;
-
-    const deletedPost = await postModel.findOneAndDelete({
+  const updatedPost = await postModel.findOneAndUpdate(
+    {
       _id: postId,
       user: currentUserId,
-    });
+    },
+    {
+      postTitle: req.body.postTitle,
+      postText: req.body.postText,
+    },
+    { new: true, runValidators: true },
+  );
 
-    if (!deletedPost) {
-      return res
-        .status(403)
-        .json({ message: "You are not authorized to delete this!" });
-    }
-
-    res.status(204).json({
-      message: "Post Deleted Succesfully",
+  if (updatedPost) {
+    res.status(200).json({
+      message: "Updated Successfully",
+      data: updatedPost,
     });
-  } catch (error) {
-    res.status(400).json({ message: "Invalid request" });
+  } else {
+    next(new AppError("Post not found or you are not authorized", 404));
   }
-};
+});
+
+const deletePost = catchAsync(async (req, res, next) => {
+  const postId = req.params.id;
+  const currentUserId = req.user._id;
+
+  const deletedPost = await postModel.findOneAndDelete({
+    _id: postId,
+    user: currentUserId,
+  });
+
+  if (!deletedPost) {
+    return next(new AppError("Post not found or you are not authorized", 403));
+  }
+
+  res.status(200).json({ message: "Post Deleted Successfully" });
+});
+
 export { getPosts, addPost, getPostById, updatePost, deletePost };

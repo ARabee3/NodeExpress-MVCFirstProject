@@ -5,6 +5,8 @@ import "dotenv/config";
 import userRouter from "./Modules/user/user.routes.js";
 import commentRouter from "./Modules/comment/comment.routes.js";
 import "./Utils/Events/sendEmailOnRegisterationEvent.js";
+import { AppError } from "./Utils/ErrorHandling/AppError.js";
+import { globalErrorHandler } from "./Middlewares/globalErrorHandler.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -13,6 +15,10 @@ app.use(express.json());
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/posts", postRouter);
 app.use("/api/v1/comments", commentRouter);
+app.use("*", (req, res, next) => {
+  next(new AppError(`Route not found: ${req.originalUrl}`, 404));
+});
+app.use(globalErrorHandler);
 
 dbConnection();
 
