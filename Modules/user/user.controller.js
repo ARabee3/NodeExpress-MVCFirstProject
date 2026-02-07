@@ -1,10 +1,12 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { userModel } from "../../Database/Models/user.model.js";
+import userEvents from "../../Utils/Events/sendEmailOnRegisterationEvent.js";
 import "dotenv/config";
 const signup = async (req, res) => {
   try {
     let newUser = await userModel.create(req.body);
+    userEvents.emit("register", newUser);
     newUser.password = undefined;
     res.status(201).json({
       message: "user created successfully",
@@ -32,6 +34,11 @@ const signin = async (req, res) => {
       return res.status(401).json({ message: "Email or Password is invalid" });
     }
 
+    if (!foundUser.isEmailConfirmed) {
+      return res
+        .status(401)
+        .json({ message: "Please Confirm Your Email First" });
+    }
     const match = await bcrypt.compare(req.body.password, foundUser.password);
 
     if (match) {
@@ -54,4 +61,24 @@ const signin = async (req, res) => {
   }
 };
 
-export { signup, signin };
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const decoded = jwt.verify(token, process.env.SECRETKEY);
+
+    const user = await userModel.findByIdAndUpdate(
+      decoded.id,
+      { isEmailConfirmed: true },
+      { new: true },
+    );
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    return res.json({
+      message: "Email verified successfully! You can now log in.",
+    });
+  } catch (e) {
+    res.status(400).json({ message: e.message });
+  }
+};
+export { signup, signin, verifyEmail };

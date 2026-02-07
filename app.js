@@ -4,6 +4,8 @@ import postRouter from "./Modules/post/post.routes.js";
 import "dotenv/config";
 import userRouter from "./Modules/user/user.routes.js";
 import commentRouter from "./Modules/comment/comment.routes.js";
+import "./Utils/Events/sendEmailOnRegisterationEvent.js";
+
 const app = express();
 const port = process.env.PORT || 3000;
 
