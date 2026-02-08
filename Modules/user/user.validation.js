@@ -4,11 +4,11 @@ const signupVal = Joi.object({
   username: Joi.string().min(4).required(),
   email: Joi.string().email().required(),
   password: Joi.string()
-    .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$"))
+    .pattern(new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[\\W_]).{8,30}$"))
     .required()
     .messages({
       "string.pattern.base":
-        "Password must be between 3 to 30 characters and alphanumeric",
+        "Password must contain at least one uppercase, one lowercase, one number, and one special character.",
     }),
   role: Joi.string().valid("user", "admin"),
 });
